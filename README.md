@@ -1,6 +1,7 @@
 # karasync.nvim
+> Under development, not available for public use at the moment.
 
-- [ ]  异步无痛同步项目
-- [ ]  允许同时同步到多个服务器
-- [ ]  差异比较(当服务器文件被其他人修改之后，本地在同步的时候提醒处理差异)
-- [ ]  版本管理(使用sqlite存储)
+- [ ] Asynchronous seamless synchronization project
+- [ ] Allow simultaneous synchronization to multiple servers
+- [ ] Diff comparison (notify and handle differences when server files are modified by others before synchronization)
+- [ ] Version management (using SQLite for storage)
