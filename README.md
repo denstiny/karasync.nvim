@@ -1,0 +1,1 @@
+# karasync.nvim
