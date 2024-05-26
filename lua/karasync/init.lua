@@ -1,9 +1,25 @@
--- @author      : denstiny (2254228017@qq.com)
--- @file        : init
--- @created     : 星期二 2月 27, 2024 17:52:17 CST
--- @github      : https://github.com/denstiny
--- @blog        : https://denstiny.github.io
-
+local events = require("karasync.info").events
+local rpc = require("karasync.rpc")
 local M = {}
+local session = nil
+local utils = require("karasync.utils")
+local rpc = require("karasync.rpc")
+local processing = require("karasync.processing")
+
+function M.setup()
+	local event = require("karasync.event")
+	event:bind_signal(events.karasyncStart, function(arg)
+		rpc:readlisten(function(err, data)
+			if not err then
+				processing.procession(data)
+			end
+		end)
+	end)
+
+	event:bind_signal(events.karasyncStartError, function(arg) end)
+
+	rpc:listen()
+	-- rpc:start_rpc_server()
+end
 
 return M
