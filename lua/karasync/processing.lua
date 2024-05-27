@@ -8,9 +8,13 @@ local TaskMap = {
 }
 
 function M.procession(data)
-	data = vim.json.decode(data)
-	if TaskMap[data.code] ~= nil then
-		TaskMap[data.code](data)
+	local e, data = pcall(vim.json.decode, data)
+	if e then
+		if TaskMap[data.code] ~= nil then
+			TaskMap[data.code](data)
+		end
+	else
+		vim.notify(data)
 	end
 end
 

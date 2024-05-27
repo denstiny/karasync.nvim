@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 
@@ -27,6 +28,8 @@ struct RPCError {
 enum MessageCode {
     ConnectedOk,
     InvalidCode,
+    SetClientInfo,
+    GetClinets,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -83,7 +86,6 @@ pub async fn await_accept(addr: &str) {
             .expect("Failed to accept connection");
 
         // 对于每个连接，生成一个新的异步任务来处理消息。
-
         tokio::spawn(async move {
             let result = process_connection(socket).await;
             if let Err(e) = result {
