@@ -1,6 +1,6 @@
 use super::fast::{self, ssh};
 use super::structs::{AsyncTaskMsg, DirInfo, ReprMessage, ReprMessageMsg};
-use super::ArcQueue;
+//use super::ArcQueue;
 use crate::config::get_config;
 use crate::logger::HandleResult;
 use crate::rpc::structs::{AsyncGitClone, AsyncTask};
@@ -19,18 +19,14 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::sync::Mutex as stdMutex;
 use std::{io::Write, net::TcpStream};
-use tokio::sync::{Mutex, Notify};
+use tokio::sync::{mpsc, Mutex, Notify};
 
-async fn sub_nofity(queue: ArcQueue, result: String) {
-    let (lock, varc) = &*queue;
-    let mut queue = lock.lock().await;
-    queue.push_back(result);
-    varc.notify_waiters();
+async fn sub_nofity(sender: mpsc::Sender<String>, result: String) {
+    sender.send(result).await.unwrap();
     info!("Notify Process");
-    drop(queue);
 }
 
-pub async fn async_project_clone(data: Value, queue: ArcQueue) -> String {
+pub async fn async_project_clone(data: Value, sender: mpsc::Sender<String>) -> String {
     // 将收到的消息转换成本地接口
     let task: AsyncTask<AsyncGitClone> = match serde_json::from_value(data) {
         Ok(data) => data,
@@ -66,7 +62,7 @@ pub async fn async_project_clone(data: Value, queue: ArcQueue) -> String {
         Err(e) => {
             let faild_str = format!("failed: {}", e.message());
             let msg = repr_message(id, code, &faild_str, 100);
-            sub_nofity(queue.clone(), msg.clone()).await;
+            sub_nofity(sender.clone(), msg.clone()).await;
             return msg;
         }
     };
@@ -88,7 +84,7 @@ pub async fn async_project_clone(data: Value, queue: ArcQueue) -> String {
         let msg = save_file(&sftp, &file_path, &save_dir, stat.is_dir());
         let msg = repr_message(id, code.clone(), msg.as_str(), (task_count - task_i) as u32);
         // 发布任务进度
-        sub_nofity(queue.clone(), msg).await;
+        sub_nofity(sender.clone(), msg).await;
         task_i += 1;
         msg_body.push(DirInfo {
             filename: file_path.to_str().unwrap().to_string(),
@@ -100,20 +96,22 @@ pub async fn async_project_clone(data: Value, queue: ArcQueue) -> String {
     let msg_body = serde_json::to_string(&msg_body).unwrap();
 
     let result = repr_message(task.id.as_str(), code, msg_body.as_str(), 100);
-    sub_nofity(queue, result.clone()).await;
+    sub_nofity(sender, result.clone()).await;
     result
 }
 
-pub async fn faild_process(data: Value) -> String {
+pub async fn faild_process(data: Value, sender: mpsc::Sender<String>) -> String {
     let code: MessageCode = MessageCode::InvalidCode;
     let faild_code = data["code"].as_str().unwrap();
     let id = data["id"].as_str().unwrap();
-    repr_message(
+    let result = repr_message(
         id,
         code,
         format!("faild: not find `{}` processing task", faild_code).as_str(),
         100,
-    )
+    );
+    sub_nofity(sender, result.clone()).await;
+    result
 }
 
 pub fn repr_message(id: &str, code: MessageCode, msg: &str, process: u32) -> String {

@@ -22,7 +22,7 @@ use self::processing::repr_message;
 use self::structs::{Message, MessageCode};
 use crate::rpc::structs::{AsyncTask, AsyncTaskMsg};
 
-type ArcQueue = Arc<(Mutex<VecDeque<String>>, Notify)>;
+//type ArcQueue = Arc<(Mutex<VecDeque<String>>, Notify)>;
 
 #[derive(Debug)]
 enum RPCErrorKind {
@@ -76,33 +76,26 @@ async fn process_connection(mut socket: tokio::net::TcpStream) -> Result<(), RPC
     // 将socket 分离读写分离
     let (mut rd, mut wd) = io::split(socket);
 
-    let (tx, mut rx) = mpsc::channel::<String>(32);
-    let list: ArcQueue = Arc::new((Mutex::new(VecDeque::new()), Notify::new()));
-
+    let (sender, mut receiver) = mpsc::channel::<String>(32);
+    //let list: ArcQueue = Arc::new((Mutex::new(VecDeque::new()), Notify::new()));
+    //let arc_sender = Arc::new(sender);
     // 等读取线程处理完毕唤醒写入线程写入数据
-    let w_list = Arc::clone(&list);
     tokio::spawn(async move {
         loop {
-            let (lock, cvar) = &*w_list;
-            cvar.notified().await;
-            info!("Notify Acceptd");
-            let mut queue = lock.lock().await;
-            if queue.is_empty() {
-                continue;
+            while let Some(message) = receiver.recv().await {
+                info!("send: {}", message.clone());
+                wd.write_all(message.as_bytes()).await.unwrap();
             }
-            let data: String = queue.pop_front().unwrap();
-            info!("send: {}", data.clone());
-            wd.write_all(data.as_bytes()).await.unwrap();
         }
     });
 
     // 等待接收数据
     // 处理客户端发送的数据
-    let r_list = Arc::clone(&list);
+    //let _sender = Arc::clone(&arc_sender);
+    let _sender = sender.clone();
     let hand: Result<(), RPCError> = tokio::spawn(async move {
         loop {
             let mut buf = vec![0; 3084];
-            let (lock, cvar) = &*r_list;
             match rd.read(&mut buf).await {
                 Ok(0) => {
                     return Err(RPCError {
@@ -136,17 +129,15 @@ async fn process_connection(mut socket: tokio::net::TcpStream) -> Result<(), RPC
                                 code: MessageCode::InvalidCode,
                             })
                             .unwrap();
-                            let mut queue = lock.lock().await;
-                            queue.push_back(msg);
-                            cvar.notify_one();
+                            _sender.send(msg).await.unwrap();
                             continue;
                         }
                     };
 
                     // 启动任务分配器
-                    let _list = Arc::clone(&r_list); // 拷贝一份list给这个任务
+                    let c_sender = _sender.clone(); // 拷贝一份list给这个任务
                     tokio::spawn(async move {
-                        assign_task(json_data, _list).await;
+                        assign_task(json_data, c_sender).await;
                     });
                 }
                 Err(e) => {
@@ -167,7 +158,7 @@ async fn process_connection(mut socket: tokio::net::TcpStream) -> Result<(), RPC
     }
 }
 
-async fn assign_task(data: Value, r_list: ArcQueue) {
+async fn assign_task(data: Value, sender: mpsc::Sender<String>) {
     let code = data["code"].as_str().unwrap();
     let json_str = format!(r#""{}""#, code);
 
@@ -177,11 +168,12 @@ async fn assign_task(data: Value, r_list: ArcQueue) {
     };
 
     let msg = match code {
-        MessageCode::CloneProjected => processing::async_project_clone(data, r_list).await,
-        _ => processing::faild_process(data).await,
+        MessageCode::CloneProjected => processing::async_project_clone(data, sender).await,
+        _ => processing::faild_process(data, sender).await,
     };
     info!("process: {}", msg);
 }
+
 mod tests {
     use super::*;
     use serde_json::json;
