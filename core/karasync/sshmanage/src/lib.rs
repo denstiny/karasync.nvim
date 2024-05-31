@@ -1,8 +1,6 @@
 pub mod error;
 use error::ErrorCode;
 use error::SSHError;
-pub mod utils;
-
 use ssh2::{DisconnectCode, Session};
 use std::{io::Read, net::TcpStream};
 
@@ -64,7 +62,7 @@ impl SSHManager {
     ///
     /// * `username`: &str
     /// * `password`: &str
-    pub fn userauth_password(&mut self, username: &str, password: &str) -> bool {
+    pub fn userauth_password(&mut self, username: String, password: String) -> bool {
         match self.sshsession.handshake() {
             Ok(_) => (),
             Err(e) => {
@@ -73,7 +71,10 @@ impl SSHManager {
             }
         };
 
-        match self.sshsession.userauth_password(username, password) {
+        match self
+            .sshsession
+            .userauth_password(username.as_str(), password.as_str())
+        {
             Ok(_) => (),
             Err(e) => {
                 eprintln!("userauth_password: {}", e.message());
@@ -81,6 +82,10 @@ impl SSHManager {
             }
         }
         true
+    }
+
+    pub fn read_file(&mut self) -> String {
+        "".to_string()
     }
 }
 
@@ -100,7 +105,7 @@ mod tests {
     #[test]
     fn it_works() {
         let mut ssh = SSHManager::new("127.0.0.1", 22);
-        ssh.userauth_password("root", "asd");
+        ssh.userauth_password("root".to_owned(), "asd".to_owned());
         match ssh.exec("ls -al".to_owned()) {
             Ok(s) => println!("{}", s),
             Err(e) => println!("{}", e.msg),

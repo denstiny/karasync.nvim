@@ -30,7 +30,14 @@ function rpc:check_server_start(timer)
 end
 
 ---@param mes table
-function rpc:send(mes) end
+function rpc:send(mes)
+	local msg = vim.json.encode(mes)
+	self.socket:write(msg, function(err)
+		if err then
+			vim.notify("failed: send message " .. err)
+		end
+	end)
+end
 --- 关闭服务器
 function rpc:close() end
 --- 读取服务器发送的消息
@@ -66,8 +73,9 @@ function rpc:start_rpc_server()
 	utils.notify("Try to start the server", vim.log.levels.INFO)
 	local dir = utils.get_plugin_root(info.plugin)
 	dir = dir .. "core/karasync"
-	local cmd = string.format("cd %s && cargo run", dir)
-	vim.fn.jobstart(cmd, {
+	local config = require("karasync.config")
+	local cmd = string.format("cd %s && cargo run %s %s %s", dir, config.data_dir, config.ip, config.port)
+	self.job = vim.fn.jobstart(cmd, {
 		on_stdout = function(job_id, data, event)
 			for _, item in pairs(data) do
 				--utils.notify(item)

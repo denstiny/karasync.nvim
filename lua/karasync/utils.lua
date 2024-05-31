@@ -27,4 +27,21 @@ function utils.notify(msg, level)
 	vim.notify(msg, level, { title = "karasync", skip_history = true })
 end
 
+--- input
+---@param tb table
+function utils.input(tb)
+	for key, v in pairs(tb) do
+		if type(v) == "table" then
+			utils.input(tb[key])
+		else
+			vim.notify(key .. " " .. v .. "")
+			if v == "" then
+				vim.ui.input({ prompt = string.format("Enter %s: ", key) }, function(input)
+					tb[key] = input
+				end)
+			end
+		end
+	end
+end
+
 return utils

@@ -3,6 +3,11 @@ local info = {
 	events = {
 		karasyncStart = "karasyncStart",
 		karasyncStartError = "karasyncStartError",
+		KarasyncSendTask = "KarasyncSendTask",
+	},
+	tasks = {
+		AsyncProjected = "AsyncProjected",
+		CloneProjected = "CloneProjected",
 	},
 }
 

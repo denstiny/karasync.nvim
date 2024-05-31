@@ -1,17 +1,17 @@
 #![allow(unused_imports)]
+use crate::config::{get_config, parse_config};
 use ::log::info;
-use core::panic;
-use sshmanage::SSHManager;
+mod config;
 mod logger;
 mod rpc;
 mod utils;
 
-static LOG_PATH: &str = "log.txt";
-
 fn main() {
-    logger::init_logger(LOG_PATH.to_owned());
+    //  解析启动配置
+    parse_config();
+
     info!("karasync start");
-    rpc::await_accept("127.0.0.1:5555");
+    rpc::await_accept(get_config().host().as_str());
     info!("karasync exit");
 
     //let (ip, port) = utils::input_parser_ssh();

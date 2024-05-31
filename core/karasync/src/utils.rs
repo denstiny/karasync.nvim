@@ -1,9 +1,16 @@
 use std::{
-    io::{self, Result},
-    net::Ipv4Addr,
+    fs::{self, File},
+    io::{self, Read, Result, Write},
+    net::{Ipv4Addr, SocketAddr},
+    path::Path,
     process::exit,
     str::FromStr,
 };
+
+use log::{error, info, warn};
+use ssh2::Sftp;
+
+use crate::logger::HandleResult;
 
 /// 获取用户输入的ip地址和端口
 #[allow(dead_code)]
@@ -54,4 +61,49 @@ pub fn get_user_cmd() -> Result<String> {
         Ok(_) => Ok(input.trim().to_owned()),
         Err(e) => Err(e),
     }
+}
+
+pub fn exits_create(path: &str) {
+    let path = Path::new(path);
+    if !path.exists() {
+        fs::create_dir_all(path).unwrap()
+    }
+}
+
+pub fn save_file(sftp: &Sftp, path: &Path, to_path: &str, is_dir: bool) -> String {
+    info!(
+        "from: {}  to: {}  is_dir: {}",
+        path.to_str().unwrap(),
+        to_path,
+        is_dir
+    );
+    //let filename = path.file_name().unwrap().to_str().unwrap();
+    let path = Path::new(path);
+    if !is_dir {
+        // TODO: 检查为什么读取失败
+        let mut file = match sftp.open(path) {
+            Ok(f) => f,
+            Err(e) => return format!("faild: {}", e.message()),
+        };
+        let mut buf = vec![0; 1024];
+        let mut local_file = match File::create(to_path) {
+            Ok(f) => f,
+            Err(err) => return format!("faild: create file {} => {}", to_path, err.to_string()),
+        };
+        while let Ok(n) = file.read(&mut buf) {
+            if n == 0 {
+                break;
+            }
+            match local_file.write_all(&buf[..n]) {
+                Ok(_) => (),
+                Err(_) => return format!("faild: write file {}", to_path),
+            }
+        }
+    } else {
+        exits_create(to_path);
+    }
+    format!(
+        "sucessfully: downloaded file {}",
+        path.file_name().unwrap().to_str().unwrap()
+    )
 }
