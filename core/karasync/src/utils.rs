@@ -71,12 +71,12 @@ pub fn exits_create(path: &str) {
 }
 
 pub fn save_file(sftp: &Sftp, path: &Path, to_path: &str, is_dir: bool) -> String {
-    info!(
-        "from: {}  to: {}  is_dir: {}",
-        path.to_str().unwrap(),
-        to_path,
-        is_dir
-    );
+    //info!(
+    //    "from: {}  to: {}  is_dir: {}",
+    //    path.to_str().unwrap(),
+    //    to_path,
+    //    is_dir
+    //);
     //let filename = path.file_name().unwrap().to_str().unwrap();
     let path = Path::new(path);
     if !is_dir {
@@ -106,4 +106,11 @@ pub fn save_file(sftp: &Sftp, path: &Path, to_path: &str, is_dir: bool) -> Strin
         "sucessfully: downloaded file {}",
         path.file_name().unwrap().to_str().unwrap()
     )
+}
+
+pub fn calculate_percentage(value: u32, total: u32) -> u32 {
+    if total == 0 {
+        return 0;
+    }
+    ((value as f64 / total as f64) * 100.0).round() as u32
 }

@@ -19,4 +19,12 @@ function struct:cloneProject()
 	return s
 end
 
+function struct:ExitServer()
+	local s = {
+		code = tasks.ExitKarasync,
+		id = os.time() .. "",
+	}
+	return s
+end
+
 return struct

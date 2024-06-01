@@ -26,9 +26,10 @@ pub struct AsyncTask<Message> {
 pub enum MessageCode {
     ConnectedOk,
     InvalidCode,
-    AsyncProjected,
+    PushProjected,
     CloneProjected,
     ReprMessage,
+    ExitServer,
 }
 
 TaskStruct! {

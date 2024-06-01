@@ -8,6 +8,7 @@ local info = {
 	tasks = {
 		AsyncProjected = "AsyncProjected",
 		CloneProjected = "CloneProjected",
+		ExitKarasync = "ExitServer",
 	},
 }
 

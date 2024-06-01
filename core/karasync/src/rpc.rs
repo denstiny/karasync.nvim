@@ -1,3 +1,4 @@
+use lazy_static::lazy_static;
 use log::{error, info, warn};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -6,13 +7,14 @@ use std::collections::{HashMap, VecDeque};
 use std::net::TcpStream;
 use std::rc::Rc;
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::Arc;
+use std::sync::{mpsc, Arc};
+use std::thread;
 use tokio::io;
 use tokio::io::AsyncWriteExt;
 use tokio::io::Error;
 use tokio::io::{AsyncReadExt, AsyncWrite};
 use tokio::net::TcpListener;
-use tokio::sync::{mpsc, Mutex, Notify};
+use tokio::sync::{Mutex, Notify};
 use tokio::task;
 
 mod fast;
@@ -67,27 +69,34 @@ pub async fn await_accept(addr: &str) {
     }
 }
 
-async fn process_connection(mut socket: tokio::net::TcpStream) -> Result<(), RPCError> {
-    // begin: 在客户端连接成功后发送初始消息
-    let msg = repr_message("nil", MessageCode::ConnectedOk, "Welcome to Karasync", 100);
-    let _ = socket.write(msg.as_bytes()).await;
-    // end
-
+async fn process_connection(socket: tokio::net::TcpStream) -> Result<(), RPCError> {
     // 将socket 分离读写分离
     let (mut rd, mut wd) = io::split(socket);
 
-    let (sender, mut receiver) = mpsc::channel::<String>(32);
+    let (sender, receiver) = mpsc::channel::<String>();
     //let list: ArcQueue = Arc::new((Mutex::new(VecDeque::new()), Notify::new()));
     //let arc_sender = Arc::new(sender);
     // 等读取线程处理完毕唤醒写入线程写入数据
     tokio::spawn(async move {
         loop {
-            while let Some(message) = receiver.recv().await {
-                info!("send: {}", message.clone());
-                wd.write_all(message.as_bytes()).await.unwrap();
+            match receiver.recv() {
+                Ok(message) => {
+                    info!("receiver: {}", message.clone());
+                    let msg = format!("{}\n", message);
+                    wd.write_all(msg.as_bytes()).await.unwrap();
+                }
+                Err(e) => {
+                    warn!("faild: {}", e.to_owned());
+                    break;
+                }
             }
         }
     });
+
+    // begin: 在客户端连接成功后发送初始消息
+    let msg = repr_message("nil", MessageCode::ConnectedOk, "Welcome to Karasync", 100);
+    sender.send(msg).unwrap();
+    // end
 
     // 等待接收数据
     // 处理客户端发送的数据
@@ -129,15 +138,15 @@ async fn process_connection(mut socket: tokio::net::TcpStream) -> Result<(), RPC
                                 code: MessageCode::InvalidCode,
                             })
                             .unwrap();
-                            _sender.send(msg).await.unwrap();
+                            _sender.send(msg).unwrap();
                             continue;
                         }
                     };
 
                     // 启动任务分配器
-                    let c_sender = _sender.clone(); // 拷贝一份list给这个任务
-                    tokio::spawn(async move {
-                        assign_task(json_data, c_sender).await;
+                    let c_sender = _sender.clone();
+                    thread::spawn(move || {
+                        assign_task(json_data, c_sender);
                     });
                 }
                 Err(e) => {
@@ -152,13 +161,14 @@ async fn process_connection(mut socket: tokio::net::TcpStream) -> Result<(), RPC
     })
     .await
     .unwrap();
+    drop(sender);
     match hand {
         Ok(_) => Ok(()),
         Err(e) => Err(e),
     }
 }
 
-async fn assign_task(data: Value, sender: mpsc::Sender<String>) {
+fn assign_task(data: Value, sender: mpsc::Sender<String>) {
     let code = data["code"].as_str().unwrap();
     let json_str = format!(r#""{}""#, code);
 
@@ -167,11 +177,13 @@ async fn assign_task(data: Value, sender: mpsc::Sender<String>) {
         Err(_) => MessageCode::InvalidCode,
     };
 
-    let msg = match code {
-        MessageCode::CloneProjected => processing::async_project_clone(data, sender).await,
-        _ => processing::faild_process(data, sender).await,
+    let result = match code {
+        MessageCode::CloneProjected => processing::async_project_clone(data, &sender),
+        MessageCode::ExitServer => processing::exit_karasync(),
+        _ => processing::faild_process(data),
     };
-    info!("process: {}", msg);
+    sender.send(result).unwrap();
+    drop(sender);
 }
 
 mod tests {

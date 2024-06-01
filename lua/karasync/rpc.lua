@@ -7,6 +7,7 @@ local ip = "127.0.0.1"
 local port = 5555
 local rpc = {
 	socket = nil,
+	jobs = {},
 }
 
 function rpc:check_server_start(timer)
@@ -75,7 +76,7 @@ function rpc:start_rpc_server()
 	dir = dir .. "core/karasync"
 	local config = require("karasync.config")
 	local cmd = string.format("cd %s && cargo run %s %s %s", dir, config.data_dir, config.ip, config.port)
-	self.job = vim.fn.jobstart(cmd, {
+	vim.fn.jobstart(cmd, {
 		on_stdout = function(job_id, data, event)
 			for _, item in pairs(data) do
 				--utils.notify(item)
@@ -86,6 +87,7 @@ function rpc:start_rpc_server()
 				--utils.notify(item, event)
 			end
 		end,
+		on_exit = function(job_id, data, event) end,
 	})
 end
 

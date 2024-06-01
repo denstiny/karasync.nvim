@@ -24,7 +24,10 @@ function utils.get_plugin_root(plugin_name)
 end
 
 function utils.notify(msg, level)
-	vim.notify(msg, level, { title = "karasync", skip_history = true })
+	--require("fidget").notify(msg, level, { title = "karasync", skip_history = true })
+	vim.schedule(function()
+		require("fidget").notify(msg, level, { title = "karasync", skip_history = true })
+	end)
 end
 
 --- input
@@ -34,7 +37,6 @@ function utils.input(tb)
 		if type(v) == "table" then
 			utils.input(tb[key])
 		else
-			vim.notify(key .. " " .. v .. "")
 			if v == "" then
 				vim.ui.input({ prompt = string.format("Enter %s: ", key) }, function(input)
 					tb[key] = input
@@ -42,6 +44,13 @@ function utils.input(tb)
 			end
 		end
 	end
+end
+
+--- 创建用户指令
+---@param cmd string
+---@param fun function
+function utils.command(cmd, fun)
+	vim.api.nvim_create_user_command(cmd, fun, {})
 end
 
 return utils
