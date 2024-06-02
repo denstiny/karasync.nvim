@@ -15,10 +15,7 @@ use std::str::FromStr;
 use std::sync::Mutex as stdMutex;
 use std::sync::{mpsc, Arc};
 use std::{io::Write, net::TcpStream};
-use structs::{
-    AsyncGitClone, AsyncTask, MessageCode, Project, ProjectRemote, ProjectUser, ReprMessage,
-    ReprMessageMsg,
-};
+use structs::{AsyncGitClone, AsyncTask, MessageCode, Project, ReprMessage, ReprMessageMsg};
 use tokio::sync::{Mutex, Notify};
 
 // 发布消息
@@ -67,16 +64,11 @@ pub fn async_project_clone(data: Value, sender: &mpsc::Sender<String>) -> String
     };
 
     let project = Project {
-        user: ProjectUser {
-            name: conf.user.clone(),
-            email: "".to_string(),
-        },
-        remote: ProjectRemote { host: conf.host },
-        branchs: Vec::new(),
-        branch: "main".to_owned(),
+        user: conf.user.clone(),
+        remote: conf.host,
     };
 
-    let data_file = format!("{}/{}/{}", &data_dir, &conf.root, project_name);
+    let data_file = format!("{}/{}/{}", data_dir, &conf.root, project_name);
     if let Err(e) = project_manager::update_project_conf(project, &data_file) {
         return repr_message(
             id,

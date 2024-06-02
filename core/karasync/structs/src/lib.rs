@@ -78,22 +78,10 @@ JsonStruct! {
 }
 
 // 配置文件结构体
-JsonStruct! {
-    ProjectUser {
-        name: String,
-        email: String
-    }
-}
-JsonStruct! {
-    ProjectRemote {
-        host: String,
-    }
-}
+
 JsonStruct! {
     Project {
-        user: ProjectUser,
-        remote: ProjectRemote,
-        branchs: Vec<String>,
-        branch: String
+        user: String,
+        remote: String,
     }
 }
