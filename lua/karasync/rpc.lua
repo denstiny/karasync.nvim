@@ -75,8 +75,16 @@ function rpc:start_rpc_server()
 	local dir = utils.get_plugin_root(info.plugin)
 	dir = dir .. "core/karasync"
 	local config = require("karasync.config")
-	local cmd = string.format("cd %s && cargo run %s %s %s", dir, config.data_dir, config.ip, config.port)
-	vim.notify(cmd)
+	local cmd = string.format(
+		"cd %s && cargo run %s %s %s %s %s",
+		dir,
+		config.data_dir,
+		config.ip,
+		config.port,
+		config.author.name,
+		config.author.email
+	)
+
 	vim.fn.jobstart(cmd, {
 		on_stdout = function(job_id, data, event)
 			for _, item in pairs(data) do

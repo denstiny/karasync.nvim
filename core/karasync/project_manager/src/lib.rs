@@ -16,6 +16,10 @@ macro_rules! try_or_return_err {
     };
 }
 
+/// 更新当前项目的配置文件
+///
+/// * `project`: 项目配置文件
+/// * `data_file`: 项目配置文件存储路径
 pub fn update_project_conf(project: Project, data_file: &str) -> Result<(), String> {
     let mut f = try_or_return_err!(File::open(data_file));
     let buf = try_or_return_err!(serde_json::to_string(&project));
@@ -25,6 +29,9 @@ pub fn update_project_conf(project: Project, data_file: &str) -> Result<(), Stri
     }
 }
 
+/// 加载项目文件，返回一个Project结构
+///
+/// * `data_file`: 存储文件路径
 pub fn load_project_conf(data_file: &str) -> Result<Project, String> {
     let mut f = try_or_return_err!(File::open(data_file));
     let mut buf = String::new();
@@ -32,7 +39,12 @@ pub fn load_project_conf(data_file: &str) -> Result<Project, String> {
     try_or_return_err!(serde_json::from_str(&buf))
 }
 
-pub fn project_clone(
+/// 克隆远程项目
+///
+/// * `conf`: 克隆远程项目
+/// * `data_dir`: 保存路径
+/// * `notify`: 进度通知回调
+pub fn project_dir_clone(
     conf: &AsyncGitClone,
     data_dir: &str,
     notify: &dyn Fn(String, u32, u32),

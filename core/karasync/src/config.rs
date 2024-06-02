@@ -10,6 +10,8 @@ pub struct Config {
     pub data_dir: String,
     pub ip: String,
     pub port: u16,
+    pub email: String,
+    pub name: String,
 }
 
 impl Config {
@@ -23,6 +25,8 @@ lazy_static! {
         data_dir: String::new(),
         ip: String::new(),
         port: u16::MIN,
+        email: String::new(),
+        name: String::new()
     });
 }
 
@@ -31,11 +35,15 @@ pub fn parse_config() {
     let data_dir = args.get(0).unwrap();
     let ip = args.get(1).unwrap();
     let port: u16 = args.get(2).unwrap().parse().unwrap();
+    let name = args.get(3).unwrap();
+    let email = args.get(4).unwrap();
 
     let mut config = CONFIG.lock().unwrap();
-    config.ip = ip.to_string();
-    config.data_dir = data_dir.to_string();
+    config.ip = ip.clone();
+    config.data_dir = data_dir.clone();
     config.port = port;
+    config.name = name.clone();
+    config.email = email.clone();
     // 检查目录运行要求的数据目录
     exits_create(&config.data_dir);
 
@@ -51,5 +59,7 @@ pub fn get_config() -> Config {
         data_dir: config.data_dir.clone(),
         ip: config.ip.clone(),
         port: config.port,
+        name: config.name.clone(),
+        email: config.email.clone(),
     }
 }

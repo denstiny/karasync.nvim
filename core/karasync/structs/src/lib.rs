@@ -86,14 +86,13 @@ JsonStruct! {
 }
 JsonStruct! {
     ProjectRemote {
-        ip: String,
-        port: u16
+        host: String,
     }
 }
 JsonStruct! {
     Project {
         user: ProjectUser,
-        remote: ProjectUser,
+        remote: ProjectRemote,
         branchs: Vec<String>,
         branch: String
     }

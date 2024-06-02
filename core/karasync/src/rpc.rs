@@ -18,7 +18,6 @@ use tokio::net::TcpListener;
 use tokio::sync::{Mutex, Notify};
 use tokio::task;
 
-mod fast;
 mod processing;
 use self::processing::repr_message;
 

@@ -1,4 +1,3 @@
-use super::fast::{self, ssh};
 use crate::config::get_config;
 use crate::logger::HandleResult;
 use crate::utils::calculate_percentage;
@@ -16,7 +15,10 @@ use std::str::FromStr;
 use std::sync::Mutex as stdMutex;
 use std::sync::{mpsc, Arc};
 use std::{io::Write, net::TcpStream};
-use structs::{AsyncGitClone, AsyncTask, MessageCode, ReprMessage, ReprMessageMsg};
+use structs::{
+    AsyncGitClone, AsyncTask, MessageCode, Project, ProjectRemote, ProjectUser, ReprMessage,
+    ReprMessageMsg,
+};
 use tokio::sync::{Mutex, Notify};
 
 // 发布消息
@@ -58,11 +60,31 @@ pub fn async_project_clone(data: Value, sender: &mpsc::Sender<String>) -> String
             ),
         );
     };
-    match project_manager::project_clone(&conf, &data_dir, &callback) {
+
+    match project_manager::project_dir_clone(&conf, &data_dir, &callback) {
         Ok(msg) => msg,
         Err(e) => sub_nofity(sender, repr_message(id, task.code.clone(), e.as_str(), 100)),
     };
 
+    let project = Project {
+        user: ProjectUser {
+            name: conf.user.clone(),
+            email: "".to_string(),
+        },
+        remote: ProjectRemote { host: conf.host },
+        branchs: Vec::new(),
+        branch: "main".to_owned(),
+    };
+
+    let data_file = format!("{}/{}/{}", &data_dir, &conf.root, project_name);
+    if let Err(e) = project_manager::update_project_conf(project, &data_file) {
+        return repr_message(
+            id,
+            task.code,
+            &format!("faild: update project conf {}", e.as_str()),
+            100,
+        );
+    }
     repr_message(
         id,
         task.code.clone(),

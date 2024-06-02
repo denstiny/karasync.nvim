@@ -52,7 +52,7 @@ mod test {
         let port: u16 = 22;
         let user = String::from_str("root").unwrap();
         let password = String::from_str("asd").unwrap();
-        let mut session = SshSession::create(ip, port, user, password).unwrap();
+        let mut session = SshSession::create(ip, port, &user, &password).unwrap();
         println!(
             "{}",
             session
