@@ -18,7 +18,7 @@ local TaskMap = {
 		local body = arg.msg.body
 		local code = arg.msg.code
 		local process = arg.msg.process
-		utils.notify(string.format("[%s](%s): %s", code, process, body))
+		utils.notify(string.format("[%s](%s%%): %s", code, process, body))
 	end,
 
 	[tasks.AsyncProjected] = function(arg)

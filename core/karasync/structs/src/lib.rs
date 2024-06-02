@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
-macro_rules! TaskStruct {
+
+macro_rules! JsonStruct {
     ($name:ident { $($field:ident: $type:ty),* $(,)? }) => {
       #[derive(Debug, Serialize, Deserialize)]
         pub struct $name {
@@ -8,7 +9,7 @@ macro_rules! TaskStruct {
     };
 }
 
-TaskStruct! {
+JsonStruct! {
     AsyncTaskMsg {
         percentage: i32,
         body: String,
@@ -32,14 +33,14 @@ pub enum MessageCode {
     ExitServer,
 }
 
-TaskStruct! {
+JsonStruct! {
     Message {
         msg: String,
         code: MessageCode,
     }
 }
 
-TaskStruct! {
+JsonStruct! {
     AsyncGitClone {
         host: String,
         path: String,
@@ -50,7 +51,7 @@ TaskStruct! {
 }
 
 // 回复消息的内容
-TaskStruct! {
+JsonStruct! {
     ReprMessageMsg {
         code: MessageCode, // 回复代码
         process: u32, // 进度
@@ -59,7 +60,7 @@ TaskStruct! {
 }
 
 // 回复消息结构体
-TaskStruct! {
+JsonStruct! {
     ReprMessage {
         code: MessageCode, // 回复代码状态
         id: String, // id
@@ -67,10 +68,33 @@ TaskStruct! {
     }
 }
 
-TaskStruct! {
+// 文件结构体
+JsonStruct! {
     DirInfo {
       filename: String,
       size: u64,
       is_dir: bool
+    }
+}
+
+// 配置文件结构体
+JsonStruct! {
+    ProjectUser {
+        name: String,
+        email: String
+    }
+}
+JsonStruct! {
+    ProjectRemote {
+        ip: String,
+        port: u16
+    }
+}
+JsonStruct! {
+    Project {
+        user: ProjectUser,
+        remote: ProjectUser,
+        branchs: Vec<String>,
+        branch: String
     }
 }

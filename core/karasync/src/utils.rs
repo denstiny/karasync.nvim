@@ -110,7 +110,18 @@ pub fn save_file(sftp: &Sftp, path: &Path, to_path: &str, is_dir: bool) -> Strin
 
 pub fn calculate_percentage(value: u32, total: u32) -> u32 {
     if total == 0 {
-        return 0;
+        return 100;
     }
     ((value as f64 / total as f64) * 100.0).round() as u32
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn test_calculate() {
+        let s = calculate_percentage(100, 100);
+        println!("{}", s);
+    }
 }

@@ -1,115 +1,69 @@
-pub mod error;
-use error::ErrorCode;
-use error::SSHError;
-use ssh2::{DisconnectCode, Session};
-use std::{io::Read, net::TcpStream};
+pub mod utils;
+use ssh2::{Session, Sftp};
+use std::{
+    io::{Read, Write},
+    net::TcpStream,
+};
 
-pub struct SSHManager {
-    pub ip: String,
-    pub port: u16,
-    sshsession: Session,
+pub struct SshSession {
+    session: ssh2::Session,
 }
 
-impl SSHManager {
-    /// 创建一个新的ssh管理
-    ///
-    /// * `ip`: &str
-    /// * `port`: &u16
-    pub fn new(ip: &str, port: u16) -> Self {
+impl SshSession {
+    pub fn create(ip: String, port: u16, user: &str, password: &str) -> Result<Self, ssh2::Error> {
         let mut session = Session::new().unwrap();
         let addr = format!("{}:{}", ip, port);
         let tcpsession = TcpStream::connect(addr).unwrap();
         session.set_tcp_stream(tcpsession);
-        Self {
-            ip: ip.to_owned(),
-            port,
-            sshsession: session,
+        session.handshake()?;
+        session.userauth_password(user, password)?;
+        Ok(Self { session })
+    }
+
+    pub fn sftp(&self) -> Result<Sftp, ssh2::Error> {
+        match self.session.sftp() {
+            Ok(sftp) => Ok(sftp),
+            Err(e) => Err(e),
         }
     }
 
-    /// 在远程执行命令
-    /// * `cmd`: &str
-    pub fn exec(&self, cmd: String) -> Result<String, SSHError> {
-        let mut channel = self.sshsession.channel_session().unwrap();
-
-        match channel.exec(cmd.as_str()) {
-            Ok(_) => (),
-            Err(e) => {
-                return Err(SSHError::sinp(
-                    ErrorCode::Exec,
-                    e.message().to_owned().as_str(),
-                ));
-            }
-        };
-        // expect("failed: exec cmd error");
-        let mut buf = String::new();
-        match channel.read_to_string(&mut buf) {
-            Ok(t) => {
-                if t > 0 {
-                    Ok(buf)
-                } else {
-                    Err(SSHError::sinp(
-                        ErrorCode::ReadExec,
-                        "read exec output length 0",
-                    ))
-                }
-            }
-            Err(_) => Err(SSHError::sinp(ErrorCode::ReadExec, "no read exec output")),
+    pub fn cmd(&mut self, cmds: Vec<String>) -> Result<String, ssh2::Error> {
+        let mut channel = self.session.channel_session()?;
+        channel.shell()?;
+        let mut s = String::new();
+        for cmd in cmds {
+            channel.write_all(cmd.as_bytes()).unwrap();
+            channel.write_all(b"\n").unwrap();
         }
-    }
-
-    /// 通过用户名和密码验证登陆
-    ///
-    /// * `username`: &str
-    /// * `password`: &str
-    pub fn userauth_password(&mut self, username: String, password: String) -> bool {
-        match self.sshsession.handshake() {
-            Ok(_) => (),
-            Err(e) => {
-                eprintln!("handshake failed: {}", e.message());
-                return false;
-            }
-        };
-
-        match self
-            .sshsession
-            .userauth_password(username.as_str(), password.as_str())
-        {
-            Ok(_) => (),
-            Err(e) => {
-                eprintln!("userauth_password: {}", e.message());
-                return false;
-            }
-        }
-        true
-    }
-
-    pub fn read_file(&mut self) -> String {
-        "".to_string()
-    }
-}
-
-impl Drop for SSHManager {
-    fn drop(&mut self) {
-        self.sshsession
-            .disconnect(Some(DisconnectCode::ByApplication), "", Some("by"))
-            .unwrap();
-        println!("close SSHManager");
+        channel.send_eof().unwrap();
+        channel.read_to_string(&mut s).unwrap();
+        Ok(s)
     }
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
+mod test {
+    use std::str::FromStr;
 
+    use super::*;
     #[test]
-    fn it_works() {
-        let mut ssh = SSHManager::new("127.0.0.1", 22);
-        ssh.userauth_password("root".to_owned(), "asd".to_owned());
-        match ssh.exec("ls -al".to_owned()) {
-            Ok(s) => println!("{}", s),
-            Err(e) => println!("{}", e.msg),
-        }
-        // utils::cmd::test();
+    fn test_ssh_exec_cmd() {
+        let ip = String::from_str("127.0.0.1").unwrap();
+        let port: u16 = 22;
+        let user = String::from_str("root").unwrap();
+        let password = String::from_str("asd").unwrap();
+        let mut session = SshSession::create(ip, port, user, password).unwrap();
+        println!(
+            "{}",
+            session
+                .cmd(vec!["cd /root/Public".to_string(), "ls".to_string()])
+                .unwrap()
+        );
+        println!(
+            "{}",
+            session
+                .cmd(vec!["cd /home/denstiny".to_string(), "ls".to_string()])
+                .unwrap()
+        )
     }
 }

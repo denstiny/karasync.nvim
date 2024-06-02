@@ -9,6 +9,7 @@ use std::rc::Rc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{mpsc, Arc};
 use std::thread;
+use structs::{Message, MessageCode};
 use tokio::io;
 use tokio::io::AsyncWriteExt;
 use tokio::io::Error;
@@ -19,10 +20,7 @@ use tokio::task;
 
 mod fast;
 mod processing;
-mod structs;
 use self::processing::repr_message;
-use self::structs::{Message, MessageCode};
-use crate::rpc::structs::{AsyncTask, AsyncTaskMsg};
 
 //type ArcQueue = Arc<(Mutex<VecDeque<String>>, Notify)>;
 
