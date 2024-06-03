@@ -6,7 +6,7 @@ function struct:cloneProject()
 	local s = {
 		msg = {
 			host = "127.0.0.1:22",
-			path = "/root/Public",
+			path = "/root/Public/colorful-winsep.nvim",
 			save_dir = vim.fn.getcwd(),
 			user = "root",
 			password = "asd",

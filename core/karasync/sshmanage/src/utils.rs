@@ -1,4 +1,3 @@
-use log::info;
 use ssh2::Sftp;
 use std::{
     fs::{self, File},
@@ -48,13 +47,6 @@ pub fn clone_files(sftp: &Sftp, path: &Path, to_path: &Path, is_dir: bool) -> St
         for (file, stat) in files.iter() {
             let load_path = file.as_path();
             let save_path = Path::new(to_path).join(file.file_name().unwrap());
-
-            info!(
-                "子文件: {} \n     path: {} \n      to_path: {}",
-                file.as_path().to_str().unwrap(),
-                load_path.to_str().unwrap(),
-                save_path.to_str().unwrap()
-            );
             clone_files(sftp, load_path, &save_path, stat.is_dir());
         }
     }

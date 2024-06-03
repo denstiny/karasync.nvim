@@ -79,9 +79,16 @@ JsonStruct! {
 
 // 配置文件结构体
 
+#[derive(Debug, Serialize, Deserialize)]
+pub enum SSHLoginType {
+    SSHKEY(String),
+    SSHPASSWORD(String),
+}
+
 JsonStruct! {
     Project {
         user: String,
         remote: String,
+        login: SSHLoginType
     }
 }

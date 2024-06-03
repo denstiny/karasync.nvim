@@ -59,9 +59,19 @@ pub fn async_project_clone(data: Value, sender: &mpsc::Sender<String>) -> String
     };
 
     match project_manager::project_dir_clone(&conf, &callback) {
-        Ok(msg) => msg,
-        Err(e) => sub_nofity(sender, repr_message(id, task.code.clone(), e.as_str(), 100)),
-    };
+        Ok(_) => repr_message(
+            id,
+            task.code.clone(),
+            &format!("Sucessfully: clone project {}", project_name),
+            100,
+        ),
+        Err(e) => repr_message(
+            id,
+            task.code.clone(),
+            &format!("faild: clone project {} ", e.as_str()),
+            100,
+        ),
+    }
 
     //let project = Project {
     //    user: conf.user.clone(),
@@ -77,12 +87,6 @@ pub fn async_project_clone(data: Value, sender: &mpsc::Sender<String>) -> String
     //        100,
     //    );
     //}
-    repr_message(
-        id,
-        task.code.clone(),
-        format!("Sucessfully: clone project {}", project_name).as_str(),
-        100,
-    )
 }
 
 // 错误消息处理
