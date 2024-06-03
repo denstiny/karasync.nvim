@@ -1,3 +1,4 @@
+use log::info;
 use ssh2::Sftp;
 use std::{
     fs::{self, File},
@@ -6,7 +7,7 @@ use std::{
 };
 
 #[allow(dead_code)]
-pub fn save_file(sftp: &Sftp, path: &Path, to_path: &str, is_dir: bool) -> String {
+pub fn clone_files(sftp: &Sftp, path: &Path, to_path: &str, is_dir: bool) -> String {
     //info!(
     //    "from: {}  to: {}  is_dir: {}",
     //    path.to_str().unwrap(),
@@ -37,6 +38,22 @@ pub fn save_file(sftp: &Sftp, path: &Path, to_path: &str, is_dir: bool) -> Strin
         }
     } else {
         exits_create(to_path);
+        let files = sftp.readdir(path).unwrap();
+        for (file, stat) in files.iter() {
+            let load_path = file.as_path();
+            let save_path = format!(
+                "{}/{}",
+                to_path,
+                file.file_name().unwrap().to_str().unwrap()
+            );
+            info!(
+                "子文件: {} \n     path: {} \n      to_path: {}",
+                file.as_path().to_str().unwrap(),
+                load_path.to_str().unwrap(),
+                save_path
+            );
+            clone_files(sftp, load_path, &save_path, stat.is_dir());
+        }
     }
     format!(
         "sucessfully: downloaded file {}",

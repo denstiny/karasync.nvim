@@ -57,6 +57,7 @@ pub fn project_dir_clone(
     let (ip, port) = (socket_addr.ip().to_string(), socket_addr.port());
     let user = conf.user.as_str();
     let password = conf.password.as_str();
+
     let ssh = match SshSession::create(ip, port, user, password) {
         Ok(session) => session,
         Err(e) => return Err(e.to_string()),
@@ -64,14 +65,14 @@ pub fn project_dir_clone(
 
     let sftp = try_or_return_err!(ssh.sftp());
     let path = Path::new(&conf.path);
-    let files = try_or_return_err!(sftp.readdir(path));
-    let files_count = files.iter().count() as u32;
     let mut cursor = 0;
     let mut msg_body: Vec<DirInfo> = Vec::new();
     let save_dir = format!("{}/{}", data_dir, &conf.root);
     // 检查存储路径是否存在，不存在则创建
     utils::exits_create(&save_dir);
 
+    let files = try_or_return_err!(sftp.readdir(path));
+    let files_count = files.iter().count() as u32;
     for (file, stat) in files.iter() {
         let file_path = file.as_path();
         let save_dir = format!(
@@ -79,7 +80,7 @@ pub fn project_dir_clone(
             &save_dir,
             &file_path.file_name().unwrap().to_str().unwrap()
         );
-        let msg = utils::save_file(&sftp, &file_path, &save_dir, stat.is_dir());
+        let msg = utils::clone_files(&sftp, &file_path, &save_dir, stat.is_dir());
         cursor += 1;
         // 回调函数发送进度
         notify(msg, cursor, files_count);

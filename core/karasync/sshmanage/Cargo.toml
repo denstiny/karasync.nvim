@@ -5,3 +5,4 @@ edition = "2021"
 
 [dependencies]
 ssh2 = { version = "0.9.4" }
+log = "0.4"
