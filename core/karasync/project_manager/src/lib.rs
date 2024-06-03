@@ -42,11 +42,9 @@ pub fn load_project_conf(data_file: &str) -> Result<Project, String> {
 /// 克隆远程项目
 ///
 /// * `conf`: 克隆远程项目
-/// * `data_dir`: 保存路径
 /// * `notify`: 进度通知回调
 pub fn project_dir_clone(
     conf: &AsyncGitClone,
-    data_dir: &str,
     notify: &dyn Fn(String, u32, u32),
 ) -> Result<(), String> {
     // 检查host是否正确
@@ -67,7 +65,7 @@ pub fn project_dir_clone(
     let path = Path::new(&conf.path);
     let mut cursor = 0;
     let mut msg_body: Vec<DirInfo> = Vec::new();
-    let save_dir = format!("{}/{}", data_dir, &conf.root);
+    let save_dir = Path::new(&conf.save_dir).join(path.file_name().unwrap());
     // 检查存储路径是否存在，不存在则创建
     utils::exits_create(&save_dir);
 
@@ -75,12 +73,8 @@ pub fn project_dir_clone(
     let files_count = files.iter().count() as u32;
     for (file, stat) in files.iter() {
         let file_path = file.as_path();
-        let save_dir = format!(
-            "{}/{}",
-            &save_dir,
-            &file_path.file_name().unwrap().to_str().unwrap()
-        );
-        let msg = utils::clone_files(&sftp, &file_path, &save_dir, stat.is_dir());
+        let save_dir = save_dir.join(file_path.file_name().unwrap());
+        let msg = utils::clone_files(&sftp, file_path, save_dir.as_path(), stat.is_dir());
         cursor += 1;
         // 回调函数发送进度
         notify(msg, cursor, files_count);

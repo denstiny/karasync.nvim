@@ -38,7 +38,7 @@ pub fn async_project_clone(data: Value, sender: &mpsc::Sender<String>) -> String
         }
     };
     let id = task.id.as_str();
-    let data_dir = get_config().data_dir;
+    //let data_dir = get_config().data_dir;
     let conf = task.msg;
     let project_name = Path::new(conf.path.as_str())
         .file_name()
@@ -58,25 +58,25 @@ pub fn async_project_clone(data: Value, sender: &mpsc::Sender<String>) -> String
         );
     };
 
-    match project_manager::project_dir_clone(&conf, &data_dir, &callback) {
+    match project_manager::project_dir_clone(&conf, &callback) {
         Ok(msg) => msg,
         Err(e) => sub_nofity(sender, repr_message(id, task.code.clone(), e.as_str(), 100)),
     };
 
-    let project = Project {
-        user: conf.user.clone(),
-        remote: conf.host,
-    };
+    //let project = Project {
+    //    user: conf.user.clone(),
+    //    remote: conf.host,
+    //};
 
-    let data_file = format!("{}/{}/{}", data_dir, &conf.root, project_name);
-    if let Err(e) = project_manager::update_project_conf(project, &data_file) {
-        return repr_message(
-            id,
-            task.code,
-            &format!("faild: update project conf {}", e.as_str()),
-            100,
-        );
-    }
+    //let data_file = format!("{}/{}/{}", data_dir, &conf.root, project_name);
+    //if let Err(e) = project_manager::update_project_conf(project, &data_file) {
+    //    return repr_message(
+    //        id,
+    //        task.code,
+    //        &format!("faild: update project conf {}", e.as_str()),
+    //        100,
+    //    );
+    //}
     repr_message(
         id,
         task.code.clone(),

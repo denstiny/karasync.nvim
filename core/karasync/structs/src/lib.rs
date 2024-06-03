@@ -44,7 +44,7 @@ JsonStruct! {
     AsyncGitClone {
         host: String,
         path: String,
-        root: String,
+        save_dir: String,
         user: String,
         password: String,
     }

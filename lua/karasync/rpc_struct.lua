@@ -7,7 +7,7 @@ function struct:cloneProject()
 		msg = {
 			host = "127.0.0.1:22",
 			path = "/root/Public",
-			root = "Public",
+			save_dir = vim.fn.getcwd(),
 			user = "root",
 			password = "asd",
 		},
