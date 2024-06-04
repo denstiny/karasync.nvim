@@ -9,13 +9,26 @@ function struct:cloneProject()
 			path = "/root/Public/colorful-winsep.nvim",
 			save_dir = vim.fn.getcwd(),
 			user = "root",
-			password = "asd",
+			login = {
+				SSHPASSWORD = "asd",
+			},
 		},
 		code = tasks.CloneProjected,
 		id = os.time() .. "",
 	}
 	utils.input(s)
 	--vim.notify("input: " .. vim.inspect(s))
+	return s
+end
+
+function struct:pushProject()
+	local s = {
+		msg = {
+			save_dir = vim.fn.getcwd(),
+		},
+		code = tasks.PushProjected,
+		id = os.time() .. "",
+	}
 	return s
 end
 

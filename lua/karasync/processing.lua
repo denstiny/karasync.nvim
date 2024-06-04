@@ -24,6 +24,13 @@ local TaskMap = {
 	[tasks.AsyncProjected] = function(arg)
 		vim.notify(vim.inspect(arg))
 	end,
+
+	[tasks.PushProjected] = function(arg)
+		local body = arg.msg.body
+		local code = arg.msg.code
+		local process = arg.msg.process
+		utils.notify(string.format("[%s](%s%%): %s", code, process, body))
+	end,
 }
 
 M.buf = ""
@@ -52,10 +59,10 @@ function M.procession(data)
 			if TaskMap[value.msg.code] ~= nil then
 				TaskMap[value.msg.code](value)
 			else
-				vim.notify("nod found code callback " .. vim.inspect(value), vim.log.levels.ERROR)
+				vim.notify("no found code callback " .. vim.inspect(value), vim.log.levels.ERROR)
 			end
 		else
-			vim.notify("解析错误: " .. arg)
+			vim.notify(arg, vim.log.levels.ERROR)
 		end
 	end)
 end

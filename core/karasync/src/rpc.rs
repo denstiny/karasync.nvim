@@ -45,6 +45,7 @@ impl std::error::Error for RPCError {}
 
 #[tokio::main]
 pub async fn await_accept(addr: &str) {
+    info!("karasync start");
     let listener = TcpListener::bind(addr)
         .await
         .expect("Failed to bind to port");
@@ -177,6 +178,7 @@ fn assign_task(data: Value, sender: mpsc::Sender<String>) {
     let result = match code {
         MessageCode::CloneProjected => processing::async_project_clone(data, &sender),
         MessageCode::ExitServer => processing::exit_karasync(),
+        MessageCode::PushProjected => processing::async_project_push(data, &sender),
         _ => processing::faild_process(data),
     };
     sender.send(result).unwrap();

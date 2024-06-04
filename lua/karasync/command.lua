@@ -3,7 +3,7 @@ local event = require("karasync.event")
 local evens = require("karasync.info").events
 local strcut = require("karasync.rpc_struct")
 
-utils.command("TestSendTask", function()
+utils.command("CloneProject", function()
 	event:emit_signal(evens.KarasyncSendTask, strcut:cloneProject())
 end)
 
@@ -13,4 +13,8 @@ end)
 
 utils.command("StartKarasync", function()
 	require("karasync.rpc"):listen()
+end)
+
+utils.command("UpdateProject", function()
+	event:emit_signal(evens.KarasyncSendTask, strcut:pushProject())
 end)

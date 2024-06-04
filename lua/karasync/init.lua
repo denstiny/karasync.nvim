@@ -5,6 +5,13 @@ local processing = require("karasync.processing")
 local event = require("karasync.event")
 
 function M.setup()
+	M.init_bind_signal()
+	rpc:listen()
+	require("karasync.command")
+end
+
+--- 初始化信号的绑定
+function M.init_bind_signal()
 	event:bind_signal(events.karasyncStart, function(arg)
 		rpc:readlisten(function(err, data)
 			if not err then
@@ -18,9 +25,6 @@ function M.setup()
 		local data = unpack(arg.data)
 		rpc:send(data)
 	end)
-
-	rpc:listen()
-	require("karasync.command")
 end
 
 return M

@@ -4,19 +4,28 @@ use std::{
     io::{Read, Write},
     net::TcpStream,
 };
+use structs::SSHLoginType;
 
 pub struct SshSession {
     session: ssh2::Session,
 }
 
 impl SshSession {
-    pub fn create(ip: String, port: u16, user: &str, password: &str) -> Result<Self, ssh2::Error> {
+    pub fn create(
+        ip: String,
+        port: u16,
+        user: &str,
+        login: &SSHLoginType,
+    ) -> Result<Self, ssh2::Error> {
         let mut session = Session::new().unwrap();
         let addr = format!("{}:{}", ip, port);
         let tcpsession = TcpStream::connect(addr).unwrap();
         session.set_tcp_stream(tcpsession);
         session.handshake()?;
-        session.userauth_password(user, password)?;
+        match login {
+            SSHLoginType::SSHKEY => session.userauth_agent(user)?,
+            SSHLoginType::SSHPASSWORD(password) => session.userauth_password(user, &password)?,
+        };
         Ok(Self { session })
     }
 
@@ -52,7 +61,8 @@ mod test {
         let port: u16 = 22;
         let user = String::from_str("root").unwrap();
         let password = String::from_str("asd").unwrap();
-        let mut session = SshSession::create(ip, port, &user, &password).unwrap();
+        let mut session =
+            SshSession::create(ip, port, &user, SSHLoginType::SSHPASSWORD(password)).unwrap();
         println!(
             "{}",
             session

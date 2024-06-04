@@ -15,7 +15,9 @@ use std::str::FromStr;
 use std::sync::Mutex as stdMutex;
 use std::sync::{mpsc, Arc};
 use std::{io::Write, net::TcpStream};
-use structs::{AsyncGitClone, AsyncTask, MessageCode, Project, ReprMessage, ReprMessageMsg};
+use structs::{
+    AsyncGitClone, AsyncGitPush, AsyncTask, MessageCode, Project, ReprMessage, ReprMessageMsg,
+};
 use tokio::sync::{Mutex, Notify};
 
 // 发布消息
@@ -46,7 +48,7 @@ pub fn async_project_clone(data: Value, sender: &mpsc::Sender<String>) -> String
         .to_str()
         .unwrap();
 
-    let callback = |msg: String, index: u32, count: u32| {
+    let msg = match project_manager::project_dir_clone(&conf, &|msg, index, count| {
         sub_nofity(
             sender,
             repr_message(
@@ -56,39 +58,57 @@ pub fn async_project_clone(data: Value, sender: &mpsc::Sender<String>) -> String
                 calculate_percentage(index, count),
             ),
         );
+    }) {
+        Ok(_) => format!("Sucessfully: clone project {}", project_name),
+        Err(e) => format!("faild: clone project {} ", e),
     };
 
-    match project_manager::project_dir_clone(&conf, &callback) {
-        Ok(_) => repr_message(
-            id,
-            task.code.clone(),
-            &format!("Sucessfully: clone project {}", project_name),
-            100,
-        ),
-        Err(e) => repr_message(
-            id,
-            task.code.clone(),
-            &format!("faild: clone project {} ", e.as_str()),
-            100,
-        ),
-    }
-
-    //let project = Project {
-    //    user: conf.user.clone(),
-    //    remote: conf.host,
-    //};
-
-    //let data_file = format!("{}/{}/{}", data_dir, &conf.root, project_name);
-    //if let Err(e) = project_manager::update_project_conf(project, &data_file) {
-    //    return repr_message(
-    //        id,
-    //        task.code,
-    //        &format!("faild: update project conf {}", e.as_str()),
-    //        100,
-    //    );
-    //}
+    repr_message(id, task.code, &msg, 100)
 }
 
+// 提交本地项目到远程
+pub fn async_project_push(data: Value, sender: &mpsc::Sender<String>) -> String {
+    let task: AsyncTask<AsyncGitPush> = match serde_json::from_value(data) {
+        Ok(data) => data,
+        Err(e) => {
+            return format!("Faile: json to AsyncTask<AsyncGitPush> {}", e);
+        }
+    };
+
+    // 加载项目文件
+    let project_path = Path::new(&task.msg.save_dir);
+
+    info!("=> {}", task.msg.save_dir);
+    let project =
+        match project_manager::load_project_conf(project_path.join(".project.json").as_path()) {
+            Ok(pro) => pro,
+            Err(e) => return repr_message(&task.id, task.code.clone(), &e, 100),
+        };
+
+    let project_name = Path::new(task.msg.save_dir.as_str())
+        .file_name()
+        .unwrap()
+        .to_str()
+        .unwrap();
+
+    // 上传项目
+    let msg = match project_manager::project_dir_push(&project, &|msg, index, count| {
+        sub_nofity(
+            sender,
+            repr_message(
+                &task.id,
+                task.code.clone(),
+                &msg,
+                calculate_percentage(index, count),
+            ),
+        )
+    }) {
+        Ok(_) => format!("Sucessfully: push project {}", project_name),
+        Err(e) => format!("faild: push project {} ", e),
+    };
+
+    repr_message(&task.id, task.code, &msg, 100)
+}
 // 错误消息处理
 pub fn faild_process(data: Value) -> String {
     let code: MessageCode = MessageCode::InvalidCode;

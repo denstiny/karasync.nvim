@@ -56,6 +56,10 @@ pub fn clone_files(sftp: &Sftp, path: &Path, to_path: &Path, is_dir: bool) -> St
     )
 }
 
+pub fn push_files(sftp: &Sftp, path: &Path, to_path: &Path, is_dir: bool) -> String {
+    String::new()
+}
+
 pub fn exits_create(path: &Path) {
     let path = Path::new(path);
     if !path.exists() {

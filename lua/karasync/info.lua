@@ -9,6 +9,7 @@ local info = {
 		AsyncProjected = "AsyncProjected",
 		CloneProjected = "CloneProjected",
 		ExitKarasync = "ExitServer",
+		PushProjected = "PushProjected",
 	},
 }
 

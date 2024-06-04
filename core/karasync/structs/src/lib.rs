@@ -46,7 +46,13 @@ JsonStruct! {
         path: String,
         save_dir: String,
         user: String,
-        password: String,
+        login: SSHLoginType,
+    }
+}
+
+JsonStruct! {
+    AsyncGitPush {
+        save_dir: String
     }
 }
 
@@ -79,9 +85,9 @@ JsonStruct! {
 
 // 配置文件结构体
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub enum SSHLoginType {
-    SSHKEY(String),
+    SSHKEY,
     SSHPASSWORD(String),
 }
 
@@ -89,6 +95,8 @@ JsonStruct! {
     Project {
         user: String,
         remote: String,
-        login: SSHLoginType
+        login: SSHLoginType,
+        path: String,
+        from: String
     }
 }
