@@ -6,6 +6,12 @@ use std::{
 };
 
 #[allow(dead_code)]
+/// 从远端克隆文件到本地
+///
+/// * `sftp`: ssh2-sftp
+/// * `path`: 远端路径
+/// * `to_path`: 本地存储路径
+/// * `is_dir`:  是否是文件夹
 pub fn clone_files(sftp: &Sftp, path: &Path, to_path: &Path, is_dir: bool) -> String {
     //info!(
     //    "from: {}  to: {}  is_dir: {}",
@@ -56,6 +62,12 @@ pub fn clone_files(sftp: &Sftp, path: &Path, to_path: &Path, is_dir: bool) -> St
     )
 }
 
+/// 将本地的项目上传到远程,触发错误时候直接返回错误消息字符串
+/// 过滤本地没有修改的文件(如果远端存在这个文件的话)
+/// * `sftp`: ssh2-sftp
+/// * `path`: 本地项目路径
+/// * `to_path`: 远程项目路径
+/// * `is_dir`: 是否是文件夹
 pub fn push_files(sftp: &Sftp, path: &Path, to_path: &Path, is_dir: bool) -> String {
     String::new()
 }
