@@ -3,22 +3,25 @@ local rpc = require("karasync.rpc")
 local tasks = require("karasync.info").tasks
 local store = require("karasync.store")
 local utils = require("karasync.utils")
+local processbar = require("karasync.ui").processbar
 
 local TaskMap = {
 	-- 连接服务器成功
 	ConnectedOk = function(arg)
-		utils.notify(arg.msg.body)
+		--utils.notify(arg.msg.body)
+		processbar:put(arg.msg.process, arg.msg.body)
 	end,
 	--- 同步项目
 	AsyncProjected = function(arg)
-		print("同步项目")
+		--print("同步项目")
 	end,
 	-- 克隆项目到本地
 	CloneProjected = function(arg)
 		local body = arg.msg.body
 		local code = arg.msg.code
 		local process = arg.msg.process
-		utils.notify(string.format("[%s](%s%%): %s", code, process, body))
+		--utils.notify(string.format("[%s](%s%%): %s", code, process, body))
+		processbar:put(process, body)
 	end,
 
 	[tasks.AsyncProjected] = function(arg)
@@ -50,7 +53,7 @@ end
 
 function M.procession(data)
 	if data == nil then
-		vim.notify("close connection")
+		processbar:put(100, "close connection")
 		return
 	end
 	M.analyze_data(data, function(arg)
@@ -59,10 +62,10 @@ function M.procession(data)
 			if TaskMap[value.msg.code] ~= nil then
 				TaskMap[value.msg.code](value)
 			else
-				vim.notify("no found code callback " .. vim.inspect(value), vim.log.levels.ERROR)
+				processbar:put("no found code callback " .. vim.inspect(value), vim.log.levels.ERROR)
 			end
 		else
-			vim.notify(arg, vim.log.levels.ERROR)
+			processbar:put(arg, vim.log.levels.ERROR)
 		end
 	end)
 end
