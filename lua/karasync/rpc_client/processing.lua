@@ -5,13 +5,20 @@ local M = {
 		ConnectedOk = function(arg)
 			vim.schedule(function()
 				api.LoginServer({
-					id = "testMain",
+					id = require("karasync.store").get("client_id"),
 					path = "/home/message",
 				})
 			end)
 		end,
 	},
 }
+
+--- 注册指定任务的回调
+---@param key: string
+---@param callback: function
+function M.resign(key, callback)
+	M.TaskProcessor[key] = callback
+end
 
 local processbar = require("karasync.ui").processbar
 

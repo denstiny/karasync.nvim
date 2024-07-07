@@ -136,7 +136,6 @@ dependencies = [
  "remotehub",
  "serde",
  "serde_json",
- "ssh2",
  "tokio",
 ]
 
@@ -326,6 +325,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5e719e8df665df0d1c8fbfd238015744736151d4445ec0836b8e628aae103b77"
 dependencies = [
  "unicode-ident",
+]
+
+[[package]]
+name = "project_unify"
+version = "0.1.0"
+dependencies = [
+ "logger",
+ "serde",
+ "serde_json",
+ "ssh2",
 ]
 
 [[package]]

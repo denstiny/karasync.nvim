@@ -2,9 +2,8 @@ local utils = require("karasync.utils")
 local event = require("karasync.event")
 local info = require("karasync.info")
 local level = vim.log.levels
+local progressbar = require("karasync.ui.progressbar")
 local events = require("karasync.info").events
-local ip = "127.0.0.1"
-local port = 7800
 local rpc = {
 	socket = nil,
 	jobs = {},
@@ -12,6 +11,9 @@ local rpc = {
 
 function rpc:check_server_start(timer)
 	self.socket = vim.uv.new_tcp()
+	local ip = require("karasync.config").config.ip
+	local port = require("karasync.config").config.port
+
 	self.socket:connect(ip, port, function(err)
 		if err then
 			vim.schedule(function()
@@ -35,16 +37,22 @@ function rpc:send(mes)
 	local msg = vim.json.encode(mes)
 	self.socket:write(msg, function(err)
 		if err then
-			vim.notify("failed: send message " .. err)
+			progressbar:put("failed: send message " .. err)
 		end
 	end)
 end
 --- 关闭服务器
-function rpc:close() end
+function rpc:close()
+	self.socket:close()
+end
 --- 读取服务器发送的消息
 ---@return
 function rpc:readlisten(callback)
 	self.socket:read_start(callback)
+end
+
+function rpc:is_conn()
+	return self.socket ~= nil
 end
 
 function rpc:listen()
@@ -71,19 +79,13 @@ function rpc:listen()
 end
 
 function rpc:start_rpc_server()
-	utils.notify("Try to start the server", vim.log.levels.INFO)
+	--utils.notify("Try to start the server", vim.log.levels.INFO)
+	progressbar:put("Try to start the server")
 	local dir = utils.get_plugin_root(info.plugin)
 	dir = dir .. "core/karasync"
-	local config = require("karasync.config")
-	local cmd = string.format(
-		"cd %s && cargo run %s %s %s %s %s",
-		dir,
-		config.data_dir,
-		config.ip,
-		config.port,
-		config.author.name,
-		config.author.email
-	)
+	local config = require("karasync.config").config
+	local cmd = string.format("cd %s && cargo run %s %s %s", dir, config.data_dir, config.ip, config.port)
+	progressbar:put(cmd)
 
 	vim.fn.jobstart(cmd, {
 		on_stdout = function(job_id, data, event)

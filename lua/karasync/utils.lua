@@ -25,10 +25,10 @@ end
 
 function utils.notify(msg, level)
 	--require("fidget").notify(msg, level, { title = "karasync", skip_history = true })
-	--	vim.schedule(function()
-	--		--require("fidget").notify(msg, level, { title = "karasync", skip_history = true })
-	--		vim.notify(msg, level, { title = "karasync", skip_history = true })
-	--	end)
+	vim.schedule(function()
+		--require("fidget").notify(msg, level, { title = "karasync", skip_history = true })
+		vim.notify(msg, level, { title = "karasync", skip_history = true })
+	end)
 end
 
 --- input

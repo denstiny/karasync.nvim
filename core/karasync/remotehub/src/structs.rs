@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+#[macro_export]
 macro_rules! JsonStruct {
     ($name:ident { $($field:ident: $type:ty),* $(,)? }) => {
       #[derive(Debug, Serialize, Deserialize)]

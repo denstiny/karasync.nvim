@@ -33,18 +33,26 @@ impl Client {
         self.id = conf.id;
         self.path = conf.path;
     }
+
+    pub async fn send(&mut self, msg: String) -> Result<(), Box<dyn std::error::Error>> {
+        Ok(self.sender.send(msg).await?)
+    }
 }
 
 type CachType = Arc<Mutex<HashMap<String, Arc<Mutex<Client>>>>>;
 pub struct Rpc {
     cache: CachType,
-    sender: Sender<String>,
-    receiver: Receiver<String>,
+    sender: Sender<(Arc<Mutex<Client>>, Value)>,
+    receiver: Receiver<(Arc<Mutex<Client>>, Value)>,
 }
 
 impl Rpc {
+    pub async fn get_cache(&self) -> CachType {
+        self.cache.clone()
+    }
+
     pub fn new() -> Self {
-        let (tx, rd) = mpsc::channel::<String>(10);
+        let (tx, rd) = mpsc::channel::<(Arc<Mutex<Client>>, Value)>(10);
         Self {
             cache: Arc::new(Mutex::new(HashMap::new())),
             sender: tx,
@@ -62,8 +70,8 @@ impl Rpc {
             }
         };
 
-        let cache = self.cache.clone();
         let sender = self.sender.clone();
+        let cache = self.cache.clone();
         let future = tokio::spawn(async move {
             loop {
                 let (socket, _) = listener
@@ -71,28 +79,26 @@ impl Rpc {
                     .await
                     .expect("Failed to accept connection");
 
-                let inal_cache = cache.clone();
                 // 对于每个连接，生成一个新的异步任务来处理消息。
                 let sender = sender.clone();
+                let cache = cache.clone();
                 tokio::spawn(async move {
-                    process_connection(socket, inal_cache, sender).await;
+                    process_connection(socket, cache, sender).await;
                 });
             }
         });
         future
     }
-    async fn recv(&mut self) -> Option<String> {
+    pub async fn recv(&mut self) -> Option<(Arc<Mutex<Client>>, Value)> {
         Some(self.receiver.recv().await?)
-    }
-    async fn send(&mut self, value: String) -> Result<(), Box<dyn std::error::Error>> {
-        Ok(self.sender.send(value).await?)
     }
 }
 
+#[allow(unreachable_patterns)]
 async fn process_connection(
     socket: tokio::net::TcpStream,
     cache: CachType,
-    sys_sender: Sender<String>,
+    sys_sender: Sender<(Arc<Mutex<Client>>, Value)>,
 ) {
     let (mut rd, mut wd) = io::split(socket);
     let (mut sender, mut receiver) = channel::<String>(10);
@@ -100,7 +106,7 @@ async fn process_connection(
     tokio::spawn(async move {
         loop {
             if let Some(message) = receiver.recv().await {
-                info!("receiver: {}", message.clone());
+                info!("recv: {}", message.clone());
                 let msg = format!("{}\n", message);
                 if let Err(e) = wd.write_all(msg.as_bytes()).await {
                     warn!("faild: {}", e.to_string());
@@ -124,7 +130,6 @@ async fn process_connection(
         sender: sender.clone(),
     }));
 
-    let cache = cache.clone();
     let arc_client = client.clone();
     let mut rd = match time::timeout(time::Duration::from_secs(3), async {
         match read_fd_value(&mut rd).await {
@@ -146,7 +151,7 @@ async fn process_connection(
                     client.from_value(client_conf);
                     id = client.id.to_owned();
                 }
-                cache.lock().await.insert(id, arc_client);
+                cache.lock().await.insert(id, arc_client.clone());
             }
             Err(e) => {
                 info!("drop socket");
@@ -174,12 +179,11 @@ async fn process_connection(
         }
     };
 
-    let cache = cache.clone();
     tokio::spawn(async move {
         loop {
             match read_fd_value(&mut rd).await {
                 Ok(msg) => {
-                    if let Err(e) = sys_sender.send(msg.to_string()).await {
+                    if let Err(e) = sys_sender.send((client.clone(), msg)).await {
                         warn!("{}", e.to_string());
                         break;
                     }
@@ -187,7 +191,6 @@ async fn process_connection(
                 Err(e) => match e.kind {
                     RPCErrorKind::Disconnect | RPCErrorKind::ReadZero => {
                         drop(rd);
-                        cache.lock().await.remove(&client.lock().await.id);
                         break;
                     }
                     RPCErrorKind::Parse => {}

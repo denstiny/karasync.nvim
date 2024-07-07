@@ -12,4 +12,8 @@ function M.remove(key)
 	end
 end
 
+function M.get(key)
+	return M.core[key]
+end
+
 return M

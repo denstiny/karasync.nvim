@@ -3,7 +3,11 @@ local event = require("karasync.event")
 local evens = require("karasync.info").events
 
 utils.command("StartKarasync", function()
-	require("karasync.rpc"):listen()
+	require("karasync.rpc_client.rpc"):listen()
+end)
+
+utils.command("StopKarsync", function()
+	require("karasync.rpc_client.rpc"):close()
 end)
 
 local M = {}
@@ -11,7 +15,7 @@ local M = {}
 --- @class task_conf
 --- @field id string Task id
 --- @field code string Task code
---- @field msg string Task msg body
+--- @field msg table Task msg body
 --- @param task_conf task_conf
 function M.SendTask(task_conf)
 	event:emit_signal(evens.KarasyncSendTask, task_conf)

@@ -24,6 +24,7 @@ impl<T, E> HandleResult<T, E> for Result<T, E> {
 
 pub fn init_logger(file_path: &str) {
     // use builder methods
+    println!("init logger: {}", file_path);
     use fern::colors::{Color, ColoredLevelConfig};
 
     let colors_line = ColoredLevelConfig::new()
