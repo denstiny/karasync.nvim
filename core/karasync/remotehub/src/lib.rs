@@ -35,8 +35,9 @@ impl Client {
     }
 }
 
+type CachType = Arc<Mutex<HashMap<String, Arc<Mutex<Client>>>>>;
 pub struct Rpc {
-    cache: Arc<Mutex<HashMap<String, Client>>>,
+    cache: CachType,
     sender: Sender<String>,
     receiver: Receiver<String>,
 }
@@ -90,7 +91,7 @@ impl Rpc {
 
 async fn process_connection(
     socket: tokio::net::TcpStream,
-    cache: Arc<Mutex<HashMap<String, Client>>>,
+    cache: CachType,
     sys_sender: Sender<String>,
 ) {
     let (mut rd, mut wd) = io::split(socket);
@@ -117,13 +118,14 @@ async fn process_connection(
         return;
     }
 
-    let mut client = Client {
+    let client = Arc::new(Mutex::new(Client {
         id: "".to_owned(),
         path: "".to_owned(),
         sender: sender.clone(),
-    };
+    }));
 
     let cache = cache.clone();
+    let arc_client = client.clone();
     let mut rd = match time::timeout(time::Duration::from_secs(3), async {
         match read_fd_value(&mut rd).await {
             Ok(msg) => {
@@ -138,8 +140,13 @@ async fn process_connection(
                         });
                     }
                 };
-                client.from_value(client_conf);
-                cache.lock().await.insert(client.id.to_owned(), client);
+                let id;
+                {
+                    let mut client = arc_client.lock().await;
+                    client.from_value(client_conf);
+                    id = client.id.to_owned();
+                }
+                cache.lock().await.insert(id, arc_client);
             }
             Err(e) => {
                 info!("drop socket");
@@ -152,7 +159,10 @@ async fn process_connection(
     .await
     {
         Ok(_rd) => match _rd {
-            Ok(_rd) => _rd,
+            Ok(_rd) => {
+                info!("client login successful");
+                _rd
+            }
             Err(e) => {
                 warn!("{}", e.to_string());
                 return;
@@ -164,6 +174,7 @@ async fn process_connection(
         }
     };
 
+    let cache = cache.clone();
     tokio::spawn(async move {
         loop {
             match read_fd_value(&mut rd).await {
@@ -173,7 +184,15 @@ async fn process_connection(
                         break;
                     }
                 }
-                _ => {}
+                Err(e) => match e.kind {
+                    RPCErrorKind::Disconnect | RPCErrorKind::ReadZero => {
+                        drop(rd);
+                        cache.lock().await.remove(&client.lock().await.id);
+                        break;
+                    }
+                    RPCErrorKind::Parse => {}
+                    _ => {}
+                },
             }
         }
     });

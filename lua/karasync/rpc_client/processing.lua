@@ -1,5 +1,16 @@
+local api = require("karasync.api")
+
 local M = {
-	TaskProcessor = {},
+	TaskProcessor = {
+		ConnectedOk = function(arg)
+			vim.schedule(function()
+				api.LoginServer({
+					id = "testMain",
+					path = "/home/message",
+				})
+			end)
+		end,
+	},
 }
 
 local processbar = require("karasync.ui").processbar
