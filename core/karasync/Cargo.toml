@@ -1,15 +1,5 @@
-[package]
-name = "karasync"
-version = "0.1.0"
-edition = "2021"
-
-[dependencies]
-project_manager = {path = "./project_manager"}
-structs = {path = "./structs"}
-tokio = { version = "1", features = ["full"] }
-serde = { version = "1.0", features = ["derive"] }
-serde_json = "1.0"
-fern = { version = "0.6", features = ["colored"] }
-log = "0.4"
-ssh2 = { version = "0.9.4" }
-lazy_static = "1.4.0"
+[workspace]
+resolver = "2"
+members = [
+    "app", "logger", "remotehub",
+]

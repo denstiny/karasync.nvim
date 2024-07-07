@@ -1,9 +1,0 @@
-[package]
-name = "project_manager"
-version = "0.1.0"
-edition = "2021"
-
-[dependencies]
-structs = {path = "../structs"}
-sshmanage = {path = "../sshmanage"}
-serde_json = "1.0"

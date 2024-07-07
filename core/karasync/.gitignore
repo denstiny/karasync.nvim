@@ -1,8 +1,0 @@
-**/*.rs.bk
-**/*.pdb
-**/*~
-**/#*#
-**/.#*
-target/
-Cargo.lock
-log.txt
