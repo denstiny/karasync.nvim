@@ -1,13 +1,12 @@
 local M = {}
 local events = require("karasync.info").events
-local rpc = require("karasync.rpc")
-local processing = require("karasync.processing")
+local rpc = require("karasync.rpc_client.rpc")
+local processing = require("karasync.rpc_client.processing")
 local event = require("karasync.event")
 
 function M.setup()
 	M.init_bind_signal()
 	rpc:listen()
-	require("karasync.command")
 end
 
 --- 初始化信号的绑定

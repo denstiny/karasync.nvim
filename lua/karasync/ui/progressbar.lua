@@ -31,6 +31,7 @@ function M:builder_window()
 	return opt
 end
 
+---@return self
 function M:builder()
 	local buf_id = vim.api.nvim_create_buf(false, true)
 	api.nvim_buf_set_option(buf_id, "buftype", "nofile")
@@ -75,18 +76,15 @@ function M:generte_id()
 end
 
 --- 压入新的消息
----@param vtr integer
 ---@param msg string
-function M:put(vtr, msg)
-	self.context.schedule = self.context.schedule + vtr
-	msg = require("karasync.ui.format").format(vtr, msg)
+function M:put(msg)
 	if msg:len() > self.context._maxline then
 		self.context._maxline = msg:len()
 	end
 	local id = M:generte_id()
 	self.context.msg[id] = msg
 	M:show_msg()
-	self:sleep_remove(2000, id)
+	self:sleep_remove(5000, id)
 	return id
 end
 
@@ -125,11 +123,10 @@ function M:show_msg()
 end
 
 ---@param id integer
----@param vtr integer
 ---@param msg string
-function M:update_msg(id, vtr, msg)
+function M:update_msg(id, msg)
 	if self.context.msg[id] then
-		self.context.msg[id] = require("karasync.ui.format").format(vtr, msg)
+		self.context.msg[id] = msg
 	end
 end
 

@@ -31,6 +31,7 @@ pub enum MessageCode {
     CloneProjected,
     ReprMessage,
     ExitServer,
+    BuildProject,
 }
 
 JsonStruct! {

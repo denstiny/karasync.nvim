@@ -7,3 +7,13 @@
 - [ ] task run project
 - [ ] test project
 - [ ] start others task in backstage
+
+
+```doc
+   ---<--------------|  
+   |                 |    
+neovim plugin -> [karasync(lua)] -> Message registration -> karasync(rust) server 
+                       ^                                        |
+                       |                                        |
+                        ------------------------------------- <-
+```

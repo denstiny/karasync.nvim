@@ -1,7 +1,7 @@
 use fern::colors::{Color, ColoredLevelConfig};
 use fern::{log_file, Dispatch};
 use log::Level;
-use log::{info, log};
+pub use log::{info, log};
 
 #[allow(dead_code)]
 pub trait HandleResult<T, E> {

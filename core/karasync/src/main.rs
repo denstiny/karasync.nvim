@@ -1,6 +1,6 @@
 #![allow(unused_imports)]
 use crate::config::{get_config, parse_config};
-use ::log::info;
+use log::info;
 mod config;
 mod logger;
 mod rpc;

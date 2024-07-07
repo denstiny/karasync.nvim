@@ -179,6 +179,7 @@ fn assign_task(data: Value, sender: mpsc::Sender<String>) {
         MessageCode::CloneProjected => processing::async_project_clone(data, &sender),
         MessageCode::ExitServer => processing::exit_karasync(),
         MessageCode::PushProjected => processing::async_project_push(data, &sender),
+        MessageCode::BuildProject => processing::async_build_project(data, &sender),
         _ => processing::faild_process(data),
     };
     sender.send(result).unwrap();

@@ -66,6 +66,10 @@ pub fn async_project_clone(data: Value, sender: &mpsc::Sender<String>) -> String
     repr_message(id, task.code, &msg, 100)
 }
 
+pub fn async_build_project(data: Value, sender: &mpsc::Sender<String>) -> String {
+    todo!()
+}
+
 // 提交本地项目到远程
 pub fn async_project_push(data: Value, sender: &mpsc::Sender<String>) -> String {
     let task: AsyncTask<AsyncGitPush> = match serde_json::from_value(data) {
