@@ -1,7 +1,9 @@
-use std::env;
-
+pub mod structs;
+mod tasks;
 use logger::{info, init_logger};
 use remotehub::Rpc;
+use std::env;
+
 #[tokio::main]
 async fn main() {
     let args: Vec<String> = env::args().collect();
@@ -20,11 +22,12 @@ async fn main() {
     let result = server.accept(&format!("{}:{}", ip, port)).await;
     loop {
         match server.recv().await {
-            Some((_client, msg)) => {
+            Some((client, msg)) => {
                 info!("recv: {}", msg);
+                tokio::spawn(async { tasks::task_distribute(client, msg).await })
             }
             None => break,
-        }
+        };
     }
     result.await.unwrap();
 }

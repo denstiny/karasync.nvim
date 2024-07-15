@@ -1,9 +1,11 @@
 local api = require("karasync.api")
+local processbar = require("karasync.ui").processbar
 
 local M = {
 	TaskProcessor = {
 		ConnectedOk = function(arg)
 			vim.schedule(function()
+				processbar:put(arg.msg)
 				api.LoginServer({
 					id = require("karasync.store").get("client_id"),
 					path = "/home/message",
@@ -19,8 +21,6 @@ local M = {
 function M.resign(key, callback)
 	M.TaskProcessor[key] = callback
 end
-
-local processbar = require("karasync.ui").processbar
 
 M.buf = ""
 --- 解析tcp数据获取等待获取到完整的数据包
@@ -48,7 +48,7 @@ function M.procession(data)
 			if M.TaskProcessor[value.code] ~= nil then
 				M.TaskProcessor[value.code](value)
 			else
-				processbar:put("no found code callback " .. value.code)
+				processbar:put(value.msg .. " " .. value.code)
 			end
 		else
 			processbar:put(arg)

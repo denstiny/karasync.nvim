@@ -13,7 +13,7 @@ end)
 local M = {}
 
 --- @class task_conf
---- @field id string Task id
+--- @field msgid string Task id
 --- @field code string Task code
 --- @field msg table Task msg body
 --- @param task_conf task_conf

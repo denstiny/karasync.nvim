@@ -1,16 +1,15 @@
-#![allow(dead_code)]
-
 mod enums;
-mod structs;
-mod utils;
+pub mod structs;
+pub mod utils;
 
-use std::{collections::HashMap, sync::Arc};
+pub use std::{collections::HashMap, sync::Arc};
 
 use enums::{RPCError, RPCErrorKind};
 use logger::{error, info, warn};
-use serde_json::Value;
+pub use serde_json::Value;
 use structs::InitClient;
-use tokio::{
+use tokio::select;
+pub use tokio::{
     io::{self, AsyncReadExt, AsyncWriteExt, ReadHalf},
     net::{TcpListener, TcpStream},
     sync::{
@@ -102,19 +101,30 @@ async fn process_connection(
 ) {
     let (mut rd, mut wd) = io::split(socket);
     let (mut sender, mut receiver) = channel::<String>(10);
+    let (shown_send, mut shown_recv) = channel::<i32>(1);
 
     tokio::spawn(async move {
         loop {
-            if let Some(message) = receiver.recv().await {
-                info!("recv: {}", message.clone());
-                let msg = format!("{}\n", message);
-                if let Err(e) = wd.write_all(msg.as_bytes()).await {
-                    warn!("faild: {}", e.to_string());
-                    break;
+            select! {
+                val = receiver.recv() => {
+                if let Some(message) = val {
+                    info!("repr: {}", message.clone());
+                    let msg = format!("{}\n", message);
+                    if let Err(e) = wd.write_all(msg.as_bytes()).await {
+                        warn!("faild: {}", e.to_string());
+                        break;
+                    }
+                } else {
+                    info!("close socket");
+                    return;
                 }
-            } else {
+            }
+            _val = shown_recv.recv() => {
                 info!("close socket");
+                drop(receiver);
+                drop(wd);
                 return;
+            }
             }
         }
     });
@@ -131,6 +141,7 @@ async fn process_connection(
     }));
 
     let arc_client = client.clone();
+    let arc_cache = cache.clone();
     let mut rd = match time::timeout(time::Duration::from_secs(3), async {
         match read_fd_value(&mut rd).await {
             Ok(msg) => {
@@ -151,7 +162,7 @@ async fn process_connection(
                     client.from_value(client_conf);
                     id = client.id.to_owned();
                 }
-                cache.lock().await.insert(id, arc_client.clone());
+                arc_cache.lock().await.insert(id, arc_client.clone());
             }
             Err(e) => {
                 info!("drop socket");
@@ -179,6 +190,7 @@ async fn process_connection(
         }
     };
 
+    let arc_cache = cache.clone();
     tokio::spawn(async move {
         loop {
             match read_fd_value(&mut rd).await {
@@ -190,7 +202,6 @@ async fn process_connection(
                 }
                 Err(e) => match e.kind {
                     RPCErrorKind::Disconnect | RPCErrorKind::ReadZero => {
-                        drop(rd);
                         break;
                     }
                     RPCErrorKind::Parse => {}
@@ -198,17 +209,21 @@ async fn process_connection(
                 },
             }
         }
+        arc_cache.lock().await.remove(&client.lock().await.id);
+        let _ = shown_send.send(0).await;
     });
 }
 
 async fn read_fd_value(rd: &mut ReadHalf<TcpStream>) -> Result<Value, RPCError> {
     let mut buf = vec![0; 3084];
     match rd.read(&mut buf).await {
-        Ok(0) => Err(RPCError {
-            kind: RPCErrorKind::ReadZero,
-            msg: "filad: Read socket fd is zero",
-        }),
         Ok(n) => {
+            if n == 0 {
+                return Err(RPCError {
+                    kind: RPCErrorKind::ReadZero,
+                    msg: "filad: Read socket fd is zero",
+                });
+            }
             let data = match String::from_utf8(buf) {
                 Ok(mut str) => {
                     info!("received: {}", str);

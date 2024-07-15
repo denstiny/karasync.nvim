@@ -6,8 +6,8 @@ function M.upload(conf, client_id)
 	local code = "UploadProject"
 	api.SendTask({
 		code = code,
-		id = client_id,
-		msg = {},
+		msgid = client_id,
+		msg = conf,
 	})
 
 	pros.resign(code, function(arg) end)

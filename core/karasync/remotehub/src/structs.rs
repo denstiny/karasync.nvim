@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 #[macro_export]
 macro_rules! JsonStruct {
     ($name:ident { $($field:ident: $type:ty),* $(,)? }) => {
@@ -14,7 +15,7 @@ JsonStruct! {
     ReprMessage {
         code: String, // 回复代码状态
         msgid: String, // id
-        msg: String //主体
+        msg: Value //主体
     }
 }
 

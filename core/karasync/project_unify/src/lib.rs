@@ -1,23 +1,20 @@
 #![allow(dead_code)]
+use logger::{error, info};
+use serde::{Deserialize, Serialize};
+use ssh2::{Session, Sftp};
 use std::fs::{self, File, OpenOptions};
 use std::io::copy;
-use std::path::PathBuf;
-use std::ptr::slice_from_raw_parts_mut;
-use std::thread::sleep;
-use std::time::Duration;
 use std::{net::TcpStream, path::Path};
-
-use logger::{error, info, warn};
-use ssh2::{Session, Sftp};
 
 pub struct ProjectUnify {}
 
-#[derive(Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub enum Password {
     Sshkey,
     Password(String),
 }
 
+#[derive(Debug)]
 pub struct Auth<'a> {
     pub addr: &'a str,
     pub user: &'a str,
@@ -35,6 +32,11 @@ impl ProjectUnify {
             error!("faild: {}", e);
             e
         })?;
+
+        info!(
+            "{:?}\nlocal_dir: {:?}\nremote_path: {:?}",
+            auth, local_dir, remote_path
+        );
 
         let sftp = sess.sftp()?;
         Self::upload_dir(&sftp, local_dir, remote_path)
@@ -57,6 +59,10 @@ impl ProjectUnify {
                 let mut remote_file = sftp.create(&remote_path)?;
                 let mut local_file = File::open(&local_path)?;
                 copy(&mut local_file, &mut remote_file)?;
+                info!(
+                    "upload: \n  - from: {:?}\n  - to: {:?}",
+                    local_path, remote_path
+                );
             }
         }
         Ok(())
@@ -97,8 +103,12 @@ impl ProjectUnify {
                     let mut local_file = OpenOptions::new()
                         .write(true)
                         .create(true)
-                        .open(local_path)?;
+                        .open(local_path.clone())?;
                     copy(&mut remote_file, &mut local_file)?;
+                    info!(
+                        "download: \n  - from: {:?}\n  - to: {:?}",
+                        remote_path, local_path
+                    );
                 }
             }
         }
@@ -129,7 +139,7 @@ pub fn exits_create(path: &Path) {
 #[cfg(test)]
 mod test {
 
-    use std::{path::Path, str::FromStr};
+    use std::path::Path;
 
     use crate::{Auth, Password, ProjectUnify};
 
