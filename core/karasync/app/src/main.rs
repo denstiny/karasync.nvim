@@ -1,4 +1,4 @@
-pub mod structs;
+mod structs;
 mod tasks;
 use logger::{info, init_logger};
 use remotehub::Rpc;
